@@ -1,3 +1,4 @@
+import { ui } from './ui'
 import { forwardRef, useImperativeHandle, useLayoutEffect, useEffect, useRef } from 'react'
 import { Pause, Play } from 'lucide-react'
 import { images } from './config'
@@ -42,7 +43,7 @@ export const IllustratedPreview = forwardRef<PreviewHandle, Props>(function Illu
     const stack = root.current?.querySelector<HTMLElement>('.preview-scene-stack')
     if (stack) {
       const copy = stack.cloneNode(true) as HTMLElement
-      copy.classList.add('preview-outgoing')
+      copy.className = ui(copy.className + ' preview-outgoing')
       copy.setAttribute('aria-hidden', 'true')
       root.current?.querySelector('.draft-frame')?.appendChild(copy)
       outgoing.current = copy
@@ -126,23 +127,23 @@ export const IllustratedPreview = forwardRef<PreviewHandle, Props>(function Illu
 
   const frameTitles = [props.version === 1 ? 'Ghé Mộc hôm nay.' : 'Matcha mới. Thử một ngụm?', 'Một góc quen, một vị mới.', 'Hẹn bạn ở Mộc.']
   const frameImages = [props.version === 1 ? images.cafe : images.matcha, images.cafe, images.matcha]
-  return <div className="draft-preview" ref={root}>
-    <div className="version-tabs" role="group" aria-label="Chọn phiên bản bản nháp">
-      <span className="version-indicator" aria-hidden="true"/>
-      {[1, 2].map(v => <button key={v} data-version={v} aria-pressed={props.version === v} className={props.version === v ? 'active' : ''} onClick={() => props.onVersion(v)}>Bản nháp v{v}{v === 2 && <span>Mới hơn</span>}</button>)}
+  return <div className={ui("draft-preview")} ref={root}>
+    <div className={ui("version-tabs")} role="group" aria-label="Chọn phiên bản bản nháp">
+      <span className={ui("version-indicator")} aria-hidden="true"/>
+      {[1, 2].map(v => <button key={v} data-version={v} aria-pressed={props.version === v} className={ui(props.version === v ? 'active' : '')} onClick={() => props.onVersion(v)}>Bản nháp v{v}{v === 2 && <span>Mới hơn</span>}</button>)}
     </div>
-    <div className={`draft-frame scene-${props.scene}`} data-scene={props.scene} data-playing={props.playing}>
-      <div className="preview-scene-stack">
-        {frameTitles.map((title, i) => <div className={`preview-scene preview-scene-${i}`} key={i} aria-hidden={props.scene !== i}>
-          <img className="frame-media" src={frameImages[i]} alt={frameImages[i] === images.cafe ? 'Khung ảnh minh họa không gian quán' : 'Khung ảnh minh họa ly matcha'} loading="lazy"/>
-          <div className="draft-overlay"><span>QUÁN MỘC / MÓN MỚI</span><strong>{title}</strong>{props.version === 2 && <p>{i === 2 ? 'Ghé quán, thưởng thức món mới.' : 'Matcha latte · thơm trà, dịu vị sữa'}</p>}</div>
+    <div className={ui(`draft-frame scene-${props.scene}`)} data-scene={props.scene} data-playing={props.playing}>
+      <div className={ui("preview-scene-stack")}>
+        {frameTitles.map((title, i) => <div className={ui(`preview-scene preview-scene-${i}`)} key={i} aria-hidden={props.scene !== i}>
+          <img className={ui("frame-media")} src={frameImages[i]} alt={frameImages[i] === images.cafe ? 'Khung ảnh minh họa không gian quán' : 'Khung ảnh minh họa ly matcha'} loading="lazy"/>
+          <div className={ui("draft-overlay")}><span>QUÁN MỘC / MÓN MỚI</span><strong>{title}</strong>{props.version === 2 && <p>{i === 2 ? 'Ghé quán, thưởng thức món mới.' : 'Matcha latte · thơm trà, dịu vị sữa'}</p>}</div>
         </div>)}
       </div>
-      <span className="draft-corner">TRÌNH DIỄN ẢNH · v{props.version}</span>
-      <button className="draft-play icon-button" aria-label={props.playing ? 'Tạm dừng trình diễn ảnh' : 'Phát trình diễn ảnh'} onClick={() => props.onPlaying(!props.playing)}>{props.playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button>
-      <div className="slideshow-track" aria-hidden="true"><span className="slideshow-progress"/></div>
+      <span className={ui("draft-corner")}>TRÌNH DIỄN ẢNH · v{props.version}</span>
+      <button className={ui("draft-play icon-button")} aria-label={props.playing ? 'Tạm dừng trình diễn ảnh' : 'Phát trình diễn ảnh'} onClick={() => props.onPlaying(!props.playing)}>{props.playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button>
+      <div className={ui("slideshow-track")} aria-hidden="true"><span className={ui("slideshow-progress")}/></div>
     </div>
-    <div className="scene-controls" role="group" aria-label="Chọn cảnh minh họa">{['00:00 · Mở đầu', '00:08 · Không gian', `${props.endTime} · Kết`].map((label, i) => <button key={label} aria-pressed={props.scene === i} className={props.scene === i ? 'active' : ''} onClick={() => props.onSeek(i)}>{label}</button>)}</div>
-    <p className="draft-disclaimer">Trình diễn ảnh có chuyển cảnh và chữ, chưa phải video được sản xuất. Các mốc là thời gian minh họa của bản nháp.</p>
+    <div className={ui("scene-controls")} role="group" aria-label="Chọn cảnh minh họa">{['00:00 · Mở đầu', '00:08 · Không gian', `${props.endTime} · Kết`].map((label, i) => <button key={label} aria-pressed={props.scene === i} className={ui(props.scene === i ? 'active' : '')} onClick={() => props.onSeek(i)}>{label}</button>)}</div>
+    <p className={ui("draft-disclaimer")}>Trình diễn ảnh có chuyển cảnh và chữ, chưa phải video được sản xuất. Các mốc là thời gian minh họa của bản nháp.</p>
   </div>
 })

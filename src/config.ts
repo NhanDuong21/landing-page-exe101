@@ -1,9 +1,10 @@
 // Đổi tên hiển thị tại đây; cập nhật thêm title trong index.html nếu đổi thương hiệu.
 export const SITE_NAME = 'Kết nối nội dung'
+const imageBase = `${import.meta.env.BASE_URL}images/`
 export const images = {
-  matcha: '/images/matcha.jpg',
-  cafe: '/images/cafe-interior.jpg',
-  pouring: '/images/coffee-pouring.jpg',
+  matcha: `${imageBase}matcha.jpg`,
+  cafe: `${imageBase}cafe-interior.jpg`,
+  pouring: `${imageBase}coffee-pouring.jpg`,
 }
 export const sources = [
   { name: 'Cody Chan · ảnh matcha', url: 'https://unsplash.com/photos/a-glass-of-refreshing-matcha-iced-latte-Oog-4Ox0rv8' },

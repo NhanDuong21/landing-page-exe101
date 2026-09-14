@@ -1,0 +1,49 @@
+@import "tailwindcss" source(none);
+@source "./";
+
+@theme inline {
+  --font-sans: "Segoe UI", Arial, sans-serif;
+  --color-brand: var(--green);
+  --color-brand-dark: var(--green-dark);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-lime: var(--lime);
+  --color-soft: var(--soft);
+}
+
+/* Established tokens and element reset, layered below component utilities. */
+@layer base {
+  :root{font-family:"Segoe UI",Arial,sans-serif;color:#202822;background:#f8f9f6;font-synthesis:none;text-rendering:optimizeLegibility;--green:#245a40;--green-dark:#183e2c;--ink:#202822;--muted:#667067;--line:#dde2d9;--lime:#dcebaf;--white:#fff;--soft:#eef2e9}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:105px}
+  body{margin:0;font-size:16px;line-height:1.6}
+  button,input,select,textarea{font:inherit}
+  button,a,input,select,textarea,summary{-webkit-tap-highlight-color:transparent}
+  button,a{touch-action:manipulation}
+  button{cursor:pointer}
+  button:disabled{cursor:not-allowed;opacity:.45}
+  a{color:inherit;text-decoration:none}
+  button{border:0}
+  img{display:block;width:100%;height:100%;object-fit:cover}
+  h1,h2,h3,h4,p,figure{margin:0}
+  h1,h2,h3,h4{line-height:1.22;font-weight:650}
+  h1,h2{letter-spacing:-.035em}
+  p{color:var(--muted)}
+  ul,ol{padding:0;margin:0;list-style:none}
+  fieldset{padding:0;border:0;margin:0}
+  legend{padding:0}
+  dl,dd{margin:0}
+  svg{flex-shrink:0}
+  ::selection{background:#dcebaf;color:var(--green-dark)}
+  :focus-visible{outline:3px solid #65832e;outline-offset:5px}
+  h3[tabindex]:focus{outline:0}
+  h2{font-size:2.125rem;font-weight:620}
+  summary{cursor:pointer;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  @media(max-width:900px){h2{font-size:1.875rem}}
+  @media(max-width:760px){html{scroll-padding-top:85px}}
+  @media(max-width:760px){h2{font-size:1.8125rem;line-height:1.28}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+}

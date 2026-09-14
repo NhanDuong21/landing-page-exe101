@@ -1,3 +1,4 @@
+import { ui } from './ui'
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -37,6 +38,10 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
     let transit: HTMLElement | undefined
     let transitPortal: HTMLElement | undefined
     let resizeObserver: ResizeObserver | undefined
+    let handoffProgress = 0
+    let briefX = 0, briefY = 0
+    const loops: { timeline: gsap.core.Timeline; element: HTMLElement; ready: () => boolean }[] = []
+    const visibleTriggers: ScrollTrigger[] = []
     const ctx = gsap.context(() => {}, scope)
     ctx.add(() => {
       const hero = scope.querySelector<HTMLElement>('.hero')!
@@ -44,11 +49,37 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
       const header = scope.querySelector<HTMLElement>('.site-header')!
       const source = scope.querySelector<HTMLElement>('.brief-source')!
       const sourceCard = source.querySelector<HTMLElement>('.brief-note')!
+      const briefAmbient = source.querySelector<HTMLElement>('.brief-ambient')!
       const target = scope.querySelector<HTMLElement>('.request-arrival')!
       const request = scope.querySelector<HTMLElement>('.journey-request')!
 
-      const updateAmbient = () => ambient.current.forEach(t => t.paused(pauseState.current || !inView || !introDone))
+      const updateAmbient = () => loops.forEach(({ timeline, element, ready }) => {
+        const stopped = pauseState.current || document.hidden || !ready()
+        if (timeline.paused() !== stopped) timeline.paused(stopped)
+        element.dataset.ambientState = stopped ? 'paused' : 'running'
+      })
+      // Each target has one owner. Intro animates the frames; ambient moves
+      // their outer depth wrappers and the images clipped inside those frames.
+      const loop = (selector: string, peak: gsap.TweenVars, period: number, ready: () => boolean, delay = 0) => {
+        const element = scope.querySelector<HTMLElement>(selector)!
+        const timeline = gsap.timeline({ paused: true, repeat: -1, yoyo: true, delay })
+          .to(element, { ...peak, duration: period / 2, ease: 'sine.inOut' })
+        element.dataset.ambientPeriod = String(period)
+        loops.push({ timeline, element, ready })
+        ambient.current.push(timeline)
+        return timeline
+      }
+      const watch = (element: HTMLElement, update: (visible: boolean) => void) => {
+        const trigger = ScrollTrigger.create({ trigger: element, start: 'top bottom', end: 'bottom top',
+          onToggle: self => { update(self.isActive); updateAmbient() },
+          onRefresh: self => { update(self.isActive); updateAmbient() },
+        })
+        visibleTriggers.push(trigger)
+        update(trigger.isActive)
+      }
       syncAmbient.current = updateAmbient
+      document.addEventListener('visibilitychange', updateAmbient)
+      ctx.add(() => () => document.removeEventListener('visibilitychange', updateAmbient))
       finishIntro.current = () => {
         titleIntro?.progress(1)
         artIntro?.progress(1)
@@ -72,10 +103,12 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
         gsap.set('.cafe-frame', { x: -45, clipPath: 'inset(0 100% 0 0 round 10px)' })
         gsap.set('.phone-frame', { y: 115, scale: .84, opacity: 0, rotation: 5 })
         gsap.set('.brief-note', { x: -28, y: 35, scale: .92, opacity: 0, rotation: -4 })
-        ambient.current = [
-          gsap.timeline({ paused: true, repeat: -1, yoyo: true }).to('.cafe-depth', { y: -12, x: 4, duration: 7.4, ease: 'sine.inOut' }),
-          gsap.timeline({ paused: true, repeat: -1, yoyo: true }).to('.phone-depth', { y: 9, x: -3, duration: 5.8, ease: 'sine.inOut' }),
-        ]
+        const heroReady = () => inView && introDone
+        loop('.cafe-depth', { y: -18, x: 8 }, 12.4, heroReady)
+        loop('.phone-depth', { y: 20, x: -10 }, 10.6, heroReady, .25)
+        loop('.brief-ambient', { y: -12, x: 5 }, 9.2, () => heroReady() && handoffProgress <= .003, .55)
+        loop('.hero-art .cafe-frame > img', { scale: 1.14, xPercent: 2, yPercent: -2 }, 13.6, heroReady, .15)
+        loop('.hero-art .phone-frame > img', { scale: 1.16, xPercent: -2, yPercent: 2.5 }, 11.8, heroReady, .4)
         const openArt = () => {
           if (introDone || artIntro) return
           artIntro = gsap.timeline({ onComplete: () => { introDone = true; updateAmbient() } })
@@ -95,11 +128,11 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
         // A document-positioned copy travels only during this short natural scroll.
         // It is decorative: scroll callbacks do not touch any React demo state.
         transit = sourceCard.cloneNode(true) as HTMLElement
-        transit.classList.add('request-transit')
+        transit.className = ui(transit.className + ' request-transit')
         transit.setAttribute('aria-hidden', 'true')
         transit.removeAttribute('id')
         transitPortal = document.createElement('div')
-        transitPortal.className = 'request-transit-portal'
+        transitPortal.className = ui('request-transit-portal')
         transitPortal.setAttribute('aria-hidden', 'true')
         transitPortal.appendChild(transit)
         document.body.appendChild(transitPortal)
@@ -113,10 +146,18 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
           gsap.set(transit!, { left: sx, top: sy, width: sw, height: a.height, x: 0, y: 0, scale: 1, rotation: 0, opacity: 0 })
         }
         const render = (progress: number) => {
+          if (handoffProgress <= .003 && progress > .003) {
+            // Capture the floating offset once at departure, then freeze its
+            // wrapper. The scroll copy starts exactly where the card was.
+            briefX = Number(gsap.getProperty(briefAmbient, 'x')) || 0
+            briefY = Number(gsap.getProperty(briefAmbient, 'y')) || 0
+          }
+          handoffProgress = progress
+          updateAmbient()
           const p = gsap.parseEase('power2.inOut')(progress)
           const blend = gsap.utils.clamp(0, 1, (progress - .82) / .18)
           const visible = progress > .003 && progress < .997
-          gsap.set(transit!, { x: (tx - sx) * p + Math.sin(p * Math.PI) * 30 - window.scrollX, y: (ty - sy) * p - window.scrollY, width: sw + (tw - sw) * p, height: source.offsetHeight + (94 - source.offsetHeight) * p, rotation: Math.sin(p * Math.PI) * 3, scale: 1 - p * .05 - Math.sin(p * Math.PI) * .06, opacity: visible ? 1 - blend : 0 })
+          gsap.set(transit!, { x: (tx - sx) * p + briefX * (1 - p) + Math.sin(p * Math.PI) * 30 - window.scrollX, y: (ty - sy) * p + briefY * (1 - p) - window.scrollY, width: sw + (tw - sw) * p, height: source.offsetHeight + (94 - source.offsetHeight) * p, rotation: Math.sin(p * Math.PI) * 3, scale: 1 - p * .05 - Math.sin(p * Math.PI) * .06, opacity: visible ? 1 - blend : 0 })
           gsap.set(transit!.querySelector('p'), { opacity: Math.max(0, 1 - p * 1.4) })
           gsap.set(source, { opacity: progress > .003 ? 0 : 1 })
           // Separate arrival wrapper keeps Flip free to move the actual request.
@@ -135,12 +176,21 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
         // The workspace changes height during Flip; only observe the stable section heading/hero.
         resizeObserver.observe(hero)
 
+        let creatorVisible = false, creatorRevealed = false
+        watch(scope.querySelector<HTMLElement>('.creator-visual')!, visible => { creatorVisible = visible })
+        loop('.creator-visual > img', { scale: 1.15, xPercent: -2.5, yPercent: 1.5 }, 12.8, () => creatorVisible && creatorRevealed)
         gsap.utils.toArray<HTMLElement>('.type-image, .creator-visual', scope).forEach((el, i) => {
-          gsap.fromTo(el, { clipPath: 'inset(14% 0 10% 0 round 12px)', y: 42 }, { clipPath: 'inset(0% 0 0% 0 round 8px)', y: 0, duration: 1.05, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 87%', toggleActions: 'play none none none' }, delay: i < 3 ? i * .1 : 0, clearProps: 'clipPath,transform' })
+          gsap.fromTo(el, { clipPath: 'inset(14% 0 10% 0 round 12px)', y: 42 }, { clipPath: 'inset(0% 0 0% 0 round 8px)', y: 0, duration: 1.05, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 87%', toggleActions: 'play none none none' }, delay: i < 3 ? i * .1 : 0, clearProps: 'clipPath,transform', onComplete: () => { if (el.classList.contains('creator-visual')) { creatorRevealed = true; updateAmbient() } } })
         })
+        let trialVisible = false, trialAssembled = false
+        watch(scope.querySelector<HTMLElement>('.trial-assembly')!, visible => { trialVisible = visible })
+        const trialReady = () => trialVisible && trialAssembled
+        loop('.trial-piece-quan > img', { scale: 1.2, xPercent: 3, yPercent: -2 }, 10.8, trialReady)
+        loop('.trial-piece-matcha > img', { scale: 1.22, xPercent: -3, yPercent: 2 }, 9.8, trialReady, .35)
         gsap.utils.toArray<HTMLElement>('.trial-piece', scope).forEach((el, i) => {
-          gsap.fromTo(el, { x: [-70, 55, -30][i], y: [65, 90, -45][i], rotation: [-24, 23, -18][i], scale: .72, opacity: .15 }, { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1, ease: 'power2.out', scrollTrigger: { trigger: '.trial-heading-stage', start: 'top 90%', end: 'top 48%', scrub: .55 } })
+          gsap.fromTo(el, { x: [-70, 55, -30][i], y: [65, 90, -45][i], rotation: [-24, 23, -18][i], scale: .72, opacity: .15 }, { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1, ease: 'power2.out', onUpdate: i === 2 ? function (this: gsap.core.Tween) { trialAssembled = this.progress() >= .999; updateAmbient() } : undefined, scrollTrigger: { trigger: '.trial-heading-stage', start: 'top 90%', end: 'top 48%', scrub: .55 } })
         })
+        updateAmbient()
       }
 
       const animateButton = (event: Event, entering: boolean) => {
@@ -161,6 +211,8 @@ export function usePageMotion(root: RefObject<HTMLDivElement | null>, reduced: b
     })
     return () => {
       resizeObserver?.disconnect(); cancelAnimationFrame(refreshFrame)
+      visibleTriggers.forEach(trigger => trigger.kill())
+      loops.forEach(({ element }) => { delete element.dataset.ambientState; delete element.dataset.ambientPeriod })
       transitPortal?.remove(); ctx.revert(); ambient.current = []; finishIntro.current = () => {}; syncAmbient.current = () => {}
     }
   }, [root, reduced])

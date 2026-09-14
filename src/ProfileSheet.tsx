@@ -1,3 +1,4 @@
+import { ui } from './ui'
 import { useLayoutEffect, useRef } from 'react'
 import { ArrowRight, Check, X } from 'lucide-react'
 import { gsap } from './motion'
@@ -20,7 +21,7 @@ export function ProfileSheet({ profile, mobile, reduced, selected, onClose, onSe
     })
     return () => ctx.revert()
   }, [profile, mobile, reduced])
-  return <dialog ref={dialog} className="profile-sheet" aria-labelledby="sheet-title" onCancel={e => { e.preventDefault(); onClose() }} onClick={e => { if (e.target === e.currentTarget && e.clientY < e.currentTarget.getBoundingClientRect().top) onClose() }}>
-    {shown && <><div className="sheet-handle" aria-hidden="true"/><div className="sheet-header"><span className={`avatar avatar-${shown.id}`}>{shown.initials}</span><div><span className="small-label">{shown.name} · HƯ CẤU</span><h3 id="sheet-title">{shown.title}</h3></div><button className="icon-button" aria-label="Đóng hồ sơ minh họa" onClick={onClose}><X size={22}/></button></div><div className="sheet-body"><p>{shown.description}</p><div className="skill-tags">{shown.skills.map(skill => <span key={skill}>{skill}</span>)}</div><h4>Hướng kịch bản đề xuất</h4><p>{shown.work}</p><p>Trao đổi yêu cầu → thống nhất kịch bản → quay tại quán → dựng và nhận góp ý.</p><p className="local-note">Đây là hồ sơ minh họa, không có người đang nhận việc.</p></div><button className="button primary sheet-select" onClick={() => { onSelect(shown.id); onClose() }}>{selected === shown.id ? <><Check size={17}/> Đã chọn hồ sơ này</> : <>Chọn hồ sơ này <ArrowRight size={17}/></>}</button></>}
+  return <dialog ref={dialog} className={ui("profile-sheet")} aria-labelledby="sheet-title" onCancel={e => { e.preventDefault(); onClose() }} onClick={e => { if (e.target === e.currentTarget && e.clientY < e.currentTarget.getBoundingClientRect().top) onClose() }}>
+    {shown && <><div className={ui("sheet-handle")} aria-hidden="true"/><div className={ui("sheet-header")}><span className={ui(`avatar avatar-${shown.id}`)}>{shown.initials}</span><div><span className={ui("small-label")}>{shown.name} · HƯ CẤU</span><h3 id="sheet-title">{shown.title}</h3></div><button className={ui("icon-button")} aria-label="Đóng hồ sơ minh họa" onClick={onClose}><X size={22}/></button></div><div className={ui("sheet-body")}><p>{shown.description}</p><div className={ui("skill-tags")}>{shown.skills.map(skill => <span key={skill}>{skill}</span>)}</div><h4>Hướng kịch bản đề xuất</h4><p>{shown.work}</p><p>Trao đổi yêu cầu → thống nhất kịch bản → quay tại quán → dựng và nhận góp ý.</p><p className={ui("local-note")}>Đây là hồ sơ minh họa, không có người đang nhận việc.</p></div><button className={ui("button primary sheet-select")} onClick={() => { onSelect(shown.id); onClose() }}>{selected === shown.id ? <><Check size={17}/> Đã chọn hồ sơ này</> : <>Chọn hồ sơ này <ArrowRight size={17}/></>}</button></>}
   </dialog>
 }

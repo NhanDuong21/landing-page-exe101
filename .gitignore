@@ -4,5 +4,6 @@ test-results/
 playwright-report/
 *.tsbuildinfo
 
-# Raw local screencast frames; MP4 and PNG deliverables stay visible.
-/artifacts/motion-*-frames/
+# Local review captures, recordings, reference builds and audit notes.
+/artifacts/
+/QA.md
